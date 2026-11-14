@@ -66,10 +66,21 @@ async function updateMinMax() {
 
     // Read existing min/max
     const minMaxSnapshot = await minMaxRef.once('value');
-    const currentMinMax = minMaxSnapshot.val() || { min: temp, max: temp };
-
+    const existingMinMax = minMaxSnapshot.val();
+    
+    // Initialize with current temp if no min/max exists
+    let currentMinMax;
     let updated = false;
     const now = Date.now();
+    
+    if (existingMinMax === null) {
+      // First run - create initial min/max
+      currentMinMax = { min: temp, max: temp };
+      updated = true;  // Force save on first run
+      console.log('📝 First run - creating initial min/max');
+    } else {
+      currentMinMax = existingMinMax;
+    }
 
     // Check for new minimum
     if (currentMinMax.min === null || temp < currentMinMax.min) {
