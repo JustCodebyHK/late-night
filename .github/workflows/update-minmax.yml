@@ -25,13 +25,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: ./esp32-dashboard
 
       - name: Run min/max update script
         env:
           FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: node scripts/update-minmax.js
-        working-directory: ./esp32-dashboard
 
       - name: Log completion
         run: echo "✅ Min/Max update completed at $(date)"
@@ -50,7 +48,6 @@ jobs:
           node-version: '20'
       - name: Install
         run: npm ci
-        working-directory: ./esp32-dashboard
       - name: Get daily stats
         env:
           FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
@@ -66,4 +63,3 @@ jobs:
             else console.log('No data yet');
           });
           "
-        working-directory: ./esp32-dashboard
