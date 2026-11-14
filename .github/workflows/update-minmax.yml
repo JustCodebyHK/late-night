@@ -1,0 +1,69 @@
+name: Update Min/Max Temperature
+
+on:
+  schedule:
+    # Runs every 5 minutes (cron: minute hour day-of-month month day-of-week)
+    - cron: '*/5 * * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  update-minmax:
+    name: Update Temperature Min/Max
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./esp32-dashboard
+
+      - name: Run min/max update script
+        env:
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: node scripts/update-minmax.js
+        working-directory: ./esp32-dashboard
+
+      - name: Log completion
+        run: echo "✅ Min/Max update completed at $(date)"
+
+  # Optional: Daily summary notification
+  daily-summary:
+    name: Daily Summary
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '0 0 * * *'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        run: npm ci
+        working-directory: ./esp32-dashboard
+      - name: Get daily stats
+        env:
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          node -e "
+          const admin = require('firebase-admin');
+          const key = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+          admin.initializeApp({ credential: admin.credential.cert(key) });
+          const db = admin.database();
+          db.ref('sensor/minmax').once('value').then(snap => {
+            const d = snap.val();
+            if (d) console.log('Daily Min/Max:', JSON.stringify(d, null, 2));
+            else console.log('No data yet');
+          });
+          "
+        working-directory: ./esp32-dashboard
