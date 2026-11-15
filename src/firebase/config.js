@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, push, set, serverTimestamp, query, orderByChild, limitToLast } from 'firebase/database';
-import { getFunctions } from 'firebase/functions';
 
 // Firebase Configuration
 // Uses environment variables with fallbacks for development
@@ -28,12 +27,11 @@ if (missingKeys.length > 0 && import.meta.env.PROD) {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const functions = getFunctions(app);
 
-export { database, functions, ref, onValue, push, set, serverTimestamp, query, orderByChild, limitToLast };
+export { database, ref, onValue, push, set, serverTimestamp, query, orderByChild, limitToLast };
 
 // Database structure reference:
 // /sensor/temperature - current temperature (from ESP8266)
 // /sensor/humidity - current humidity (from ESP8266)
-// /sensor/minmax - min/max tracked by Cloud Function 24/7
+// /sensor/minmax - min/max tracked by GitHub Actions 24/7
 //   { min: number, max: number, minTime: number, maxTime: number }

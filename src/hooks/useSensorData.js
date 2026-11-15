@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { database, functions, ref, onValue } from '../firebase/config';
-import { httpsCallable } from 'firebase/functions';
+import { database, ref, onValue, set } from '../firebase/config';
 
 /**
  * Hook to fetch sensor data from Firebase Realtime Database
  * Reads current values from /sensor/temperature & /sensor/humidity
- * Reads min/max from /sensor/minmax (updated by Cloud Function 24/7)
+ * Reads min/max from /sensor/minmax (updated by GitHub Actions 24/7)
  */
 export function useSensorData() {
   const [temperature, setTemperature] = useState(null);
@@ -14,7 +13,7 @@ export function useSensorData() {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   
-  // Min/Max from Firebase (survives dashboard restarts, tracked 24/7 by Cloud Function)
+  // Min/Max from Firebase (survives dashboard restarts, tracked 24/7 by GitHub Actions)
   const [minTemp, setMinTemp] = useState(null);
   const [maxTemp, setMaxTemp] = useState(null);
   const [minTempTime, setMinTempTime] = useState(null);
@@ -60,7 +59,7 @@ export function useSensorData() {
       setError(err.message);
     });
 
-    // Subscribe to min/max (from Cloud Function)
+    // Subscribe to min/max (from GitHub Actions)
     const minMaxUnsubscribe = onValue(minMaxRef, (snapshot) => {
       if (!mounted) return;
       
@@ -85,21 +84,13 @@ export function useSensorData() {
     };
   }, []);
 
-  // Function to reset min/max via Cloud Function
+  // Function to reset min/max via direct database write
   const resetMinMax = async () => {
     try {
-      const resetFn = httpsCallable(functions, 'resetMinMax');
-      await resetFn();
-      console.log('Min/Max reset requested via Cloud Function');
+      await set(ref(database, 'sensor/minmax'), { min: null, max: null, minTime: null, maxTime: null });
+      console.log('Min/Max reset requested via database write');
     } catch (err) {
-      console.error('Failed to call resetMinMax:', err);
-      // Fallback: direct database write (requires write permissions)
-      try {
-        const { set, ref: dbRef } = await import('firebase/database');
-        await set(dbRef(database, 'sensor/minmax'), { min: null, max: null, minTime: null, maxTime: null });
-      } catch (e) {
-        console.error('Fallback reset also failed:', e);
-      }
+      console.error('Failed to reset min/max:', err);
     }
   };
 
