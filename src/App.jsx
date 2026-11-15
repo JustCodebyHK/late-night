@@ -1,9 +1,9 @@
-import { Dashboard } from './components/Dashboard';
+import { DashboardFigma } from './components/DashboardFigma';
 import './index.css';
 
 function App() {
   return (
-    <Dashboard />
+    <DashboardFigma />
   );
 }
 
