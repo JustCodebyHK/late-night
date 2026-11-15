@@ -73,9 +73,21 @@ async function updateMinMax() {
     let updated = false;
     const now = Date.now();
     
+    // Helper to format timestamp as readable string
+    function formatTimestamp(ts) {
+      return new Date(ts).toISOString().replace('T', ' ').substring(0, 19);
+    }
+
     if (existingMinMax === null) {
       // First run - create initial min/max
-      currentMinMax = { min: temp, max: temp };
+      currentMinMax = { 
+        min: temp, 
+        max: temp,
+        minTime: now,
+        maxTime: now,
+        minTimeStr: formatTimestamp(now),
+        maxTimeStr: formatTimestamp(now)
+      };
       updated = true;  // Force save on first run
       console.log('📝 First run - creating initial min/max');
     } else {
@@ -86,16 +98,18 @@ async function updateMinMax() {
     if (currentMinMax.min === null || temp < currentMinMax.min) {
       currentMinMax.min = temp;
       currentMinMax.minTime = now;
+      currentMinMax.minTimeStr = formatTimestamp(now);
       updated = true;
-      console.log(`📉 New minimum: ${temp}°C`);
+      console.log(`📉 New minimum: ${temp}°C at ${formatTimestamp(now)}`);
     }
 
     // Check for new maximum
     if (currentMinMax.max === null || temp > currentMinMax.max) {
       currentMinMax.max = temp;
       currentMinMax.maxTime = now;
+      currentMinMax.maxTimeStr = formatTimestamp(now);
       updated = true;
-      console.log(`📈 New maximum: ${temp}°C`);
+      console.log(`📈 New maximum: ${temp}°C at ${formatTimestamp(now)}`);
     }
 
     if (updated) {
