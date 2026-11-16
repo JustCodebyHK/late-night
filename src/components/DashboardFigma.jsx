@@ -31,7 +31,6 @@ export function DashboardFigma() {
   } = useSensorData();
   
   const [now, setNow] = useState(new Date());
-  const [resetLabel, setResetLabel] = useState('Reset Today');
   const [chartData, setChartData] = useState({ labels: [], temperature: [], humidity: [], gas: [] });
   const [chartTimeRange, setChartTimeRange] = useState('24h');
 
@@ -104,12 +103,6 @@ export function DashboardFigma() {
     const alpha = ((a * temperature) / (b + temperature)) + Math.log(humidity / 100);
     return Math.round((b * alpha) / (a - alpha) * 10) / 10;
   }, [temperature, humidity]);
-
-  const handleReset = () => {
-    resetMinMax();
-    setResetLabel('Extremes Reset');
-    setTimeout(() => setResetLabel('Reset Today'), 1800);
-  };
 
   const formatTime = (date) => {
     return new Intl.DateTimeFormat('en-GB', {
@@ -283,26 +276,8 @@ export function DashboardFigma() {
           <div className="section-heading">
             <div>
               <div className="section-kicker">24 hour overview</div>
-              <h2 id="extremes-heading">Today's Extremes</h2>
+              <h2 id="extremes-heading">Temperature Extremes</h2>
             </div>
-            <button className="reset-button" type="button" onClick={handleReset}>
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path
-                  d="M4.1 7A6.5 6.5 0 1 1 3.5 11"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M3.25 3.75V7.5H7"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {resetLabel}
-            </button>
           </div>
 
           <div className="extremes-grid">
@@ -374,24 +349,6 @@ export function DashboardFigma() {
                 <div className="section-kicker">24 hour overview</div>
                 <h2 id="gas-extremes-heading">Gas Level Extremes</h2>
               </div>
-              <button className="reset-button" type="button" onClick={handleReset}>
-                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path
-                    d="M4.1 7A6.5 6.5 0 1 1 3.5 11"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M3.25 3.75V7.5H7"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {resetLabel}
-              </button>
             </div>
 
             <div className="extremes-grid">
