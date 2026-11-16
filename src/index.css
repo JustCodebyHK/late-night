@@ -292,6 +292,9 @@ h1 {
 .tone-violet {
   color: var(--violet);
 }
+.tone-green {
+  color: var(--green);
+}
 
 .metric-heading {
   display: flex;

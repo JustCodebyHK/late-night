@@ -33,5 +33,9 @@ export { database, ref, onValue, push, set, serverTimestamp, query, orderByChild
 // Database structure reference:
 // /sensor/temperature - current temperature (from ESP8266)
 // /sensor/humidity - current humidity (from ESP8266)
+// /sensor/gasRaw - raw analog value from MQ2 (0-1023)
+// /sensor/gasPercent - gas concentration percentage (0-100%)
 // /sensor/minmax - min/max tracked by GitHub Actions 24/7
+//   { min: number, max: number, minTime: number, maxTime: number }
+// /sensor/gasMinMax - gas min/max tracked by GitHub Actions
 //   { min: number, max: number, minTime: number, maxTime: number }

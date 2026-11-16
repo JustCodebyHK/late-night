@@ -3,12 +3,14 @@ import { database, ref, onValue, set } from '../firebase/config';
 
 /**
  * Hook to fetch sensor data from Firebase Realtime Database
- * Reads current values from /sensor/temperature & /sensor/humidity
+ * Reads current values from /sensor/temperature, /sensor/humidity, /sensor/gasRaw, /sensor/gasPercent
  * Reads min/max from /sensor/minmax (updated by GitHub Actions 24/7)
  */
 export function useSensorData() {
   const [temperature, setTemperature] = useState(null);
   const [humidity, setHumidity] = useState(null);
+  const [gasRaw, setGasRaw] = useState(null);
+  const [gasPercent, setGasPercent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -18,10 +20,18 @@ export function useSensorData() {
   const [maxTemp, setMaxTemp] = useState(null);
   const [minTempTime, setMinTempTime] = useState(null);
   const [maxTempTime, setMaxTempTime] = useState(null);
+  
+  // Gas min/max tracking
+  const [minGas, setMinGas] = useState(null);
+  const [maxGas, setMaxGas] = useState(null);
+  const [minGasTime, setMinGasTime] = useState(null);
+  const [maxGasTime, setMaxGasTime] = useState(null);
 
   useEffect(() => {
     const tempRef = ref(database, 'sensor/temperature');
     const humRef = ref(database, 'sensor/humidity');
+    const gasRawRef = ref(database, 'sensor/gasRaw');
+    const gasPercentRef = ref(database, 'sensor/gasPercent');
     const minMaxRef = ref(database, 'sensor/minmax');
 
     let mounted = true;
@@ -59,6 +69,36 @@ export function useSensorData() {
       setError(err.message);
     });
 
+    // Subscribe to gas raw
+    const gasRawUnsubscribe = onValue(gasRawRef, (snapshot) => {
+      if (!mounted) return;
+      
+      const value = snapshot.val();
+      console.log('[Firebase] Gas Raw:', value);
+      if (value !== null) {
+        setGasRaw(Number(value));
+      }
+    }, (err) => {
+      if (!mounted) return;
+      console.error('[Firebase] Gas Raw error:', err);
+      setError(err.message);
+    });
+
+    // Subscribe to gas percent
+    const gasPercentUnsubscribe = onValue(gasPercentRef, (snapshot) => {
+      if (!mounted) return;
+      
+      const value = snapshot.val();
+      console.log('[Firebase] Gas Percent:', value);
+      if (value !== null) {
+        setGasPercent(Number(value));
+      }
+    }, (err) => {
+      if (!mounted) return;
+      console.error('[Firebase] Gas Percent error:', err);
+      setError(err.message);
+    });
+
     // Subscribe to min/max (from GitHub Actions)
     const minMaxUnsubscribe = onValue(minMaxRef, (snapshot) => {
       if (!mounted) return;
@@ -70,6 +110,12 @@ export function useSensorData() {
         if (data.max !== null && data.max !== undefined) setMaxTemp(Number(data.max));
         if (data.minTime) setMinTempTime(data.minTime);
         if (data.maxTime) setMaxTempTime(data.maxTime);
+        
+        // Gas min/max
+        if (data.minGas !== null && data.minGas !== undefined) setMinGas(Number(data.minGas));
+        if (data.maxGas !== null && data.maxGas !== undefined) setMaxGas(Number(data.maxGas));
+        if (data.minGasTime) setMinGasTime(data.minGasTime);
+        if (data.maxGasTime) setMaxGasTime(data.maxGasTime);
       }
     }, (err) => {
       if (!mounted) return;
@@ -80,6 +126,8 @@ export function useSensorData() {
       mounted = false;
       tempUnsubscribe();
       humUnsubscribe();
+      gasRawUnsubscribe();
+      gasPercentUnsubscribe();
       minMaxUnsubscribe();
     };
   }, []);
@@ -87,7 +135,10 @@ export function useSensorData() {
   // Function to reset min/max via direct database write
   const resetMinMax = async () => {
     try {
-      await set(ref(database, 'sensor/minmax'), { min: null, max: null, minTime: null, maxTime: null });
+      await set(ref(database, 'sensor/minmax'), { 
+        min: null, max: null, minTime: null, maxTime: null,
+        minGas: null, maxGas: null, minGasTime: null, maxGasTime: null 
+      });
       console.log('Min/Max reset requested via database write');
     } catch (err) {
       console.error('Failed to reset min/max:', err);
@@ -96,7 +147,9 @@ export function useSensorData() {
 
   return { 
     temperature, 
-    humidity, 
+    humidity,
+    gasRaw,
+    gasPercent,
     loading, 
     error, 
     lastUpdate,
@@ -104,6 +157,10 @@ export function useSensorData() {
     maxTemp,
     minTempTime,
     maxTempTime,
+    minGas,
+    maxGas,
+    minGasTime,
+    maxGasTime,
     resetMinMax
   };
 }

@@ -13,7 +13,9 @@ export function DashboardFigma() {
   const { isDark, toggle } = useDarkMode();
   const { 
     temperature, 
-    humidity, 
+    humidity,
+    gasRaw,
+    gasPercent,
     loading, 
     error, 
     lastUpdate,
@@ -21,12 +23,16 @@ export function DashboardFigma() {
     maxTemp,
     minTempTime,
     maxTempTime,
+    minGas,
+    maxGas,
+    minGasTime,
+    maxGasTime,
     resetMinMax
   } = useSensorData();
   
   const [now, setNow] = useState(new Date());
   const [resetLabel, setResetLabel] = useState('Reset Today');
-  const [chartData, setChartData] = useState({ labels: [], temperature: [], humidity: [] });
+  const [chartData, setChartData] = useState({ labels: [], temperature: [], humidity: [], gas: [] });
   const [chartTimeRange, setChartTimeRange] = useState('24h');
 
   // Update clock every second
@@ -42,6 +48,7 @@ export function DashboardFigma() {
       const labels = [];
       const tempData = [];
       const humData = [];
+      const gasData = [];
       const now = Date.now();
       
       // Generate data points for the selected time range
@@ -64,18 +71,21 @@ export function DashboardFigma() {
         // Base values with some variation
         const baseTemp = temperature || 22;
         const baseHum = humidity || 50;
+        const baseGas = gasPercent || 20;
         const variation = Math.sin(i * 0.3) * 2 + (Math.random() - 0.5) * 1.5;
         const humVariation = Math.cos(i * 0.2) * 5 + (Math.random() - 0.5) * 3;
+        const gasVariation = Math.sin(i * 0.15) * 10 + (Math.random() - 0.5) * 5;
         
         tempData.push(Math.max(0, Math.round((baseTemp + variation) * 10) / 10));
         humData.push(Math.max(0, Math.min(100, Math.round(baseHum + humVariation))));
+        gasData.push(Math.max(0, Math.min(100, Math.round(baseGas + gasVariation))));
       }
       
-      return { labels, temperature: tempData, humidity: humData };
+      return { labels, temperature: tempData, humidity: humData, gas: gasData };
     };
     
     setChartData(generateMockHistory());
-  }, [chartTimeRange, temperature, humidity]);
+  }, [chartTimeRange, temperature, humidity, gasPercent]);
 
   // Calculate heat index and dew point
   const heatIndex = useMemo(() => {
@@ -158,7 +168,18 @@ export function DashboardFigma() {
       tone: 'violet',
       icon: '🌫️',
     },
-  ], [temperature, humidity, heatIndex, dewPoint, lastUpdate]);
+  {
+      label: 'Gas Level',
+      description: 'Air quality',
+      value: gasPercent !== null ? gasPercent.toFixed(0) : '—',
+      unit: '%',
+      time: lastUpdate ? `Updated ${formatTimestamp(lastUpdate)}` : 'Waiting...',
+      tone: 'green',
+      icon: '🌬️',
+      progress: gasPercent !== null ? gasPercent : 0,
+      rawValue: gasRaw,
+    },
+  ], [temperature, humidity, heatIndex, dewPoint, gasPercent, gasRaw, lastUpdate]);
 
   if (loading) {
     return (
@@ -345,6 +366,96 @@ export function DashboardFigma() {
           </div>
         </section>
 
+        {/* Gas Extremes Card */}
+        {(minGas !== null || maxGas !== null) && (
+          <section className="extremes-card" aria-labelledby="gas-extremes-heading">
+            <div className="section-heading">
+              <div>
+                <div className="section-kicker">24 hour overview</div>
+                <h2 id="gas-extremes-heading">Gas Level Extremes</h2>
+              </div>
+              <button className="reset-button" type="button" onClick={handleReset}>
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path
+                    d="M4.1 7A6.5 6.5 0 1 1 3.5 11"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M3.25 3.75V7.5H7"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {resetLabel}
+              </button>
+            </div>
+
+            <div className="extremes-grid">
+              <article className="extreme minimum">
+                <div className="extreme-top">
+                  <div className="extreme-icon" style={{ background: 'var(--green-soft)', color: 'var(--green)' }}>
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M10 3.5v13M5.5 12l4.5 4.5 4.5-4.5"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span>Minimum</span>
+                </div>
+                <div className="extreme-value">
+                  {minGas !== null ? (
+                    <>
+                      {minGas.toFixed(0)} <span>%</span>
+                    </>
+                  ) : (
+                    <>— <span>%</span></>
+                  )}
+                </div>
+                <p>
+                  Recorded at <strong>{minGasTime ? formatTimestamp(minGasTime) : '—'}</strong>
+                </p>
+              </article>
+              <div className="extreme-divider" />
+              <article className="extreme maximum">
+                <div className="extreme-top">
+                  <div className="extreme-icon">
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M10 16.5v-13M5.5 8 10 3.5 14.5 8"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span>Maximum</span>
+                </div>
+                <div className="extreme-value">
+                  {maxGas !== null ? (
+                    <>
+                      {maxGas.toFixed(0)} <span>%</span>
+                    </>
+                  ) : (
+                    <>— <span>%</span></>
+                  )}
+                </div>
+                <p>
+                  Recorded at <strong>{maxGasTime ? formatTimestamp(maxGasTime) : '—'}</strong>
+                </p>
+              </article>
+            </div>
+          </section>
+        )}
+
         {/* Historical Charts Section */}
         <section className="charts-section" aria-labelledby="charts-heading">
           <div className="section-heading">
@@ -368,6 +479,15 @@ export function DashboardFigma() {
 
           <div className="charts-grid">
             <DualSensorChart data={chartData} height={350} />
+            <SensorChart 
+              data={{ labels: chartData.labels, temperature: chartData.gas }} 
+              label="Gas Level" 
+              color="#16a46c"
+              backgroundColor="rgba(22, 164, 108, 0.1)"
+              borderColor="#16a46c"
+              yAxisLabel="%"
+              height={350}
+            />
           </div>
         </section>
 
@@ -391,7 +511,7 @@ export function DashboardFigma() {
           </div>
           <div className="metadata">
             <p>
-              Source <code>/sensor/temperature</code> & <code>/sensor/humidity</code>
+              Source <code>/sensor/temperature</code> & <code>/sensor/humidity</code> & <code>/sensor/gasPercent</code>
             </p>
             <p>Synced via GitHub Actions / Firebase Realtime DB</p>
           </div>
